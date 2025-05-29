@@ -13,24 +13,20 @@ class Home extends StatefulWidget {
 
 class _HomeState extends State<Home> {
 
-  LatLng? _currentPosition = LatLng(-17.9697656,-67.1053412); // Default position
+  LatLng? _currentPosition = LatLng(-17.9697656,-67.1053412);
+  bool _loading = false;
+  final MapController _mapController = MapController();
+
+  List _markers = [];
 
   Future<void> location() async {
-    // Implement your location fetching logic here
-    // For demonstration, we will just print a message
     print('Fetching location...');
-    // You can use packages like geolocator or location to get the actual location
   }
   _determinePosition() async {
     bool serviceEnabled;
     LocationPermission permission;
-
-    // Test if location services are enabled.
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      // Location services are not enabled don't continue
-      // accessing the position and request users of the
-      // App to enable the location services.
       return Future.error('Location services are disabled.');
     }
 
@@ -38,27 +34,25 @@ class _HomeState extends State<Home> {
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        // Permissions are denied, next time you could try
-        // requesting permissions again (this is also where
-        // Android's shouldShowRequestPermissionRationale
-        // returned true. According to Android guidelines
-        // your App should show an explanatory UI now.
         return Future.error('Location permissions are denied');
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      // Permissions are denied forever, handle appropriately.
       return Future.error(
           'Location permissions are permanently denied, we cannot request permissions.');
     }
 
-    // When we reach here, permissions are granted and we can
-    // continue accessing the position of the device.
-    Position pos = await Geolocator.getCurrentPosition();
     setState(() {
-      _currentPosition = LatLng(pos.latitude, pos.longitude);
+      _loading = true;
     });
+    Position pos = await Geolocator.getCurrentPosition();
+    LatLng newPosition = LatLng(pos.latitude, pos.longitude);
+    setState(() {
+      _currentPosition = newPosition;
+      _loading = false;
+    });
+    _mapController.move(newPosition, 16.0);
   }
 
   @override
@@ -85,14 +79,28 @@ class _HomeState extends State<Home> {
       body: Column(
         children: [
           ElevatedButton(
-              onPressed: _determinePosition,
-              child: Text('Get Location')
+              onPressed: _loading ? null : _determinePosition,
+              child: _loading ?
+                CircularProgressIndicator(color: Colors.white) :
+                Text('Get Current Location', style: TextStyle(fontSize: 16))
           ),
           Expanded(
             child: FlutterMap(
+              mapController: _mapController,
               options: MapOptions(
                 initialCenter: LatLng(-17.9697656,-67.1053412),
                 initialZoom: 14,
+                onTap: (tapPosition, point) {
+                  // print('Tapped at: $point');
+                  setState(() {
+                    _markers.add(Marker(
+                      point: point,
+                      width: 80,
+                      height: 80,
+                      child: Icon(Icons.location_pin, size: 40, color: Colors.blue),
+                    ));
+                  });
+                },
               ),
               children: [
                 TileLayer( // Bring your own tiles
@@ -102,6 +110,13 @@ class _HomeState extends State<Home> {
                 ),
                 MarkerLayer(
                   markers: [
+                    // Marker(
+                    //   point: _currentPosition ?? LatLng(-17.9697656,-67.1053412), // Use the current position or default
+                    //   width: 80,
+                    //   height: 80,
+                    //   child: Icon(Icons.location_pin, size: 40, color: Colors.red),
+                    // ),
+                    ..._markers, // Display all markers added by user taps
                     Marker(
                       point: _currentPosition ?? LatLng(-17.9697656,-67.1053412), // Use the current position or default
                       width: 80,

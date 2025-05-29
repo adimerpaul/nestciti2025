@@ -13,7 +13,7 @@ export class AuthService {
             throw new NotFoundException('El usuario no existe o la contraseña es incorrecta');
         }
 
-        const payload = { username: user.username, sub: user.id };
+        const payload = { username: user.username, id: user.id };
 
         const token = await this.jwtService.signAsync(payload)
         return {

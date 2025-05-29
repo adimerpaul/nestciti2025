@@ -65,6 +65,16 @@ export default function DashboardPage() {
             productsGet();
         })
     }
+    const handleProductDelete = async (id) => {
+        const confirmation = confirm('Seguro que desea eliminar este producto?');
+        if (!confirmation) return false;
+        // console.log('handleProductDelete', id);
+        axios.delete(`http://localhost:3000/products/${id}`).then((res) => {
+            // console.log('Producto eliminado:', res.data);
+            // alert('Producto eliminado correctamente');
+            productsGet();
+        })
+    }
     return (
         <>
             <h1>Dashboard Page</h1>
@@ -87,6 +97,7 @@ export default function DashboardPage() {
                         <th>Precio</th>
                         <th>Descripción</th>
                         <th>Usuario</th>
+                        <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -97,6 +108,13 @@ export default function DashboardPage() {
                             <td>{product.price}</td>
                             <td>{product.description}</td>
                             <td>{product.userId}</td>
+                            <td>
+                                <button
+                                    onClick={() => handleProductDelete(product.id)}
+                                >
+                                    Eliminar
+                                </button>
+                            </td>
                         </tr>
                     ))}
                 </tbody>
